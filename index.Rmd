@@ -124,6 +124,8 @@ NEON_MAGs_metagenomes_chemistry <- NEON_MAGs %>%
 
 ### Lower Teakettle Site Graphs
 
+\
+
 Reading in Tree Files from GTDB
 ```{r}
 #tree_arc <- read.tree("data/gtdbtk.ar53.decorated.tree")
@@ -148,18 +150,18 @@ tree_bac_preorder <- Preorder(tree_bac)
 tree_Chloroflexota <- Subtree(tree_bac_preorder, 1712)
 ```
 
-Filter NEON Table to Taxonomic Group or Site
+Filter Combo Table to Taxonomic Group or Site
 ```{r}
 NEON_combo_Chloroflexota <- NEON_MAGs_metagenomes_chemistry %>% 
   filter(Phylum == "Chloroflexota")
+
+NEON_combo_TEAK <- NEON_MAGs_metagenomes_chemistry %>% 
+  filter(`Site ID.x` == "TEAK") %>% 
+  filter(Domain == "Bacteria")
 ```
 
 Circle Phylogeny for TEAK Site Showing Phylum Color Labels
 ```{r, fig.width = 10, fig.height = 5}
-NEON_combo_TEAK <- NEON_MAGs_metagenomes_chemistry %>% 
-  filter(`Site ID.x` == "TEAK") %>% 
-  filter(Domain == "Bacteria")
-
 TEAK_MAGs_label <- NEON_combo_TEAK$label
 
 tree_bac_TEAK_MAGs <-drop.tip(tree_bac,tree_bac$tip.label[-match(TEAK_MAGs_label, tree_bac$tip.label)])

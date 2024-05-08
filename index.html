@@ -470,7 +470,8 @@ display: none;
 
 <div id="TOC">
 <ul>
-<li><a href="#graphs-below" id="toc-graphs-below">Graphs Below</a>
+<li><a href="#graphs-below-here" id="toc-graphs-below-here">Graphs Below
+Here</a>
 <ul>
 <li><a href="#lower-teakettle-site-graphs" id="toc-lower-teakettle-site-graphs">Lower Teakettle Site
 Graphs</a></li>
@@ -504,7 +505,7 @@ suppressPackageStartupMessages(library(ggnewscale))
 suppressPackageStartupMessages(library(ggtreeExtra))
 suppressPackageStartupMessages(library(ggstar))
 suppressPackageStartupMessages(library(plotly))</code></pre>
-<p>Loading in MAG Data</p>
+<p>MAG Data</p>
 <pre class="r"><code>NEON_MAGs &lt;- read_csv(&quot;data/GOLD_Study_ID_Gs0161344_NEON_2024_4_21.csv&quot;) %&gt;% 
 #remove columns that are not needed for data analysis
   select(-c(`GOLD Study ID`, `Bin Methods`, `Created By`, `Date Added`, `Bin Lineage`)) %&gt;% 
@@ -536,14 +537,15 @@ suppressPackageStartupMessages(library(plotly))</code></pre>
   separate(`Sample Name`, c(&quot;Site ID&quot;,&quot;subplot.layer.date&quot;), &quot;_&quot;, remove = FALSE,) %&gt;% 
 #separate the plot info into 3 columns
   separate(`subplot.layer.date`, c(&quot;Subplot&quot;, &quot;Layer&quot;, &quot;Date&quot;), &quot;-&quot;)</code></pre>
-<p>Removing ‘re-annotation’ and ‘WREF plot’ Samples from Data</p>
+<p>Metagenome Data</p>
 <pre class="r"><code>NEON_metagenomes &lt;- read_tsv(&quot;data/exported_img_data_Gs0161344_NEON.tsv&quot;) %&gt;% 
   select(-c(`Domain`, `Sequencing Status`, `Sequencing Center`)) %&gt;% 
   rename(`Genome Name` = `Genome Name / Sample Name`) %&gt;% 
   filter(str_detect(`Genome Name`, &#39;re-annotation&#39;, negate = T)) %&gt;% 
-  filter(str_detect(`Genome Name`, &#39;WREF plot&#39;, negate = T))</code></pre>
-<p>Reformatting Genome Name</p>
-<pre class="r"><code>NEON_metagenomes &lt;- NEON_metagenomes %&gt;% 
+  filter(str_detect(`Genome Name`, &#39;WREF plot&#39;, negate = T))
+
+#Reformatting Genome Name
+NEON_metagenomes &lt;- NEON_metagenomes %&gt;% 
 #Get rid of the the common string &quot;Soil microbial communities from &quot;
   mutate_at(&quot;Genome Name&quot;, str_replace, &quot;Terrestrial soil microbial communities from &quot;, &quot;&quot;) %&gt;% 
 #Use the first `-` to split the column in two
@@ -553,17 +555,29 @@ suppressPackageStartupMessages(library(plotly))</code></pre>
 #separate the Sample Name into Site ID and plot info
   separate(`Sample Name`, c(&quot;Site ID&quot;,&quot;subplot.layer.date&quot;), &quot;_&quot;, remove = FALSE,) %&gt;% 
 #separate the plot info into 3 columns
-  separate(`subplot.layer.date`, c(&quot;Subplot&quot;, &quot;Layer&quot;, &quot;Date&quot;), &quot;-&quot;)</code></pre>
-<p>Loading in NEON Chemistry Data</p>
+  separate(`subplot.layer.date`, c(&quot;Subplot&quot;, &quot;Layer&quot;, &quot;Date&quot;), &quot;-&quot;) %&gt;% 
+#filter for Site ID
+  filter(`Site ID` == &quot;TEAK&quot;)</code></pre>
+<p>Chemistry Data</p>
 <pre class="r"><code>NEON_chemistry &lt;- read_tsv(&quot;data/neon_plot_soilChem1_metadata.tsv&quot;) %&gt;% 
 #remove -COMP from genomicsSampleID
-  mutate_at(&quot;genomicsSampleID&quot;, str_replace, &quot;-COMP&quot;, &quot;&quot;)</code></pre>
-<p>Joining NEON MAG, Metagenome, and Chemistry Dataframes into a Single
-Dataframe</p>
+  mutate_at(&quot;genomicsSampleID&quot;, str_replace, &quot;-COMP&quot;, &quot;&quot;) %&gt;% 
+  filter(`siteID` == &quot;TEAK&quot;)</code></pre>
+<p>Joining MAG, Metagenome, and Chemistry into a Single Dataframe</p>
 <pre class="r"><code>NEON_MAGs_metagenomes_chemistry &lt;- NEON_MAGs %&gt;% 
   left_join(NEON_metagenomes, by = &quot;Sample Name&quot;) %&gt;% 
   left_join(NEON_chemistry, by = c(&quot;Sample Name&quot; = &quot;genomicsSampleID&quot;)) %&gt;% 
   rename(&quot;label&quot; = &quot;Bin ID&quot;)</code></pre>
+<p><br />
+</p>
+<div id="graphs-below-here" class="section level1">
+<h1>Graphs Below Here</h1>
+<p><br />
+</p>
+<div id="lower-teakettle-site-graphs" class="section level3">
+<h3>Lower Teakettle Site Graphs</h3>
+<p><br />
+</p>
 <p>Reading in Tree Files from GTDB</p>
 <pre class="r"><code>#tree_arc &lt;- read.tree(&quot;data/gtdbtk.ar53.decorated.tree&quot;)
 tree_bac &lt;- read.tree(&quot;data/gtdbtk.bac120.decorated.tree&quot;)</code></pre>
@@ -577,23 +591,15 @@ grep(&quot;Chloroflexota&quot;, node_vector_bac, value = TRUE)</code></pre>
 <p>Need to Preorder Tree Before Extracting</p>
 <pre class="r"><code>tree_bac_preorder &lt;- Preorder(tree_bac)
 tree_Chloroflexota &lt;- Subtree(tree_bac_preorder, 1712)</code></pre>
-<p>Filter NEON Table to Taxonomic Group or Site</p>
-<pre class="r"><code>NEON_MAGs_Chloroflexota &lt;- NEON_MAGs_metagenomes_chemistry %&gt;% 
-  filter(Phylum == &quot;Chloroflexota&quot;)</code></pre>
-<p><br />
-</p>
-<div id="graphs-below" class="section level1">
-<h1>Graphs Below</h1>
-<p><br />
-</p>
-<div id="lower-teakettle-site-graphs" class="section level3">
-<h3>Lower Teakettle Site Graphs</h3>
-<p>Circle Phylogeny for TEAK Site Showing Phylum Color Labels</p>
-<pre class="r"><code>NEON_MAGs_metagenomes_chemistry_TEAK &lt;- NEON_MAGs_metagenomes_chemistry %&gt;% 
-  filter(`Site ID.x` == &quot;TEAK&quot;) %&gt;% 
-  filter(Domain == &quot;Bacteria&quot;)
+<p>Filter Combo Table to Taxonomic Group or Site</p>
+<pre class="r"><code>NEON_combo_Chloroflexota &lt;- NEON_MAGs_metagenomes_chemistry %&gt;% 
+  filter(Phylum == &quot;Chloroflexota&quot;)
 
-TEAK_MAGs_label &lt;- NEON_MAGs_metagenomes_chemistry_TEAK$label
+NEON_combo_TEAK &lt;- NEON_MAGs_metagenomes_chemistry %&gt;% 
+  filter(`Site ID.x` == &quot;TEAK&quot;) %&gt;% 
+  filter(Domain == &quot;Bacteria&quot;)</code></pre>
+<p>Circle Phylogeny for TEAK Site Showing Phylum Color Labels</p>
+<pre class="r"><code>TEAK_MAGs_label &lt;- NEON_combo_TEAK$label
 
 tree_bac_TEAK_MAGs &lt;-drop.tip(tree_bac,tree_bac$tip.label[-match(TEAK_MAGs_label, tree_bac$tip.label)])
 
