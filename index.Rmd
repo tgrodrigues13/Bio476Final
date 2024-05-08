@@ -38,15 +38,12 @@ suppressPackageStartupMessages(library(phytools))
 suppressPackageStartupMessages(library(ggnewscale))
 suppressPackageStartupMessages(library(ggtreeExtra))
 suppressPackageStartupMessages(library(ggstar))
+suppressPackageStartupMessages(library(plotly))
 ```
 
-```{r}
-NEON_MAGs <- read_csv("data/GOLD_Study_ID_Gs0161344_NEON_2024_4_21.csv")
-```
-
-Loading in MAG Data
+MAG Data
 ```{r, message=FALSE, warning=FALSE}
-NEON_MAGs <- NEON_MAGs %>% 
+NEON_MAGs <- read_csv("data/GOLD_Study_ID_Gs0161344_NEON_2024_4_21.csv") %>% 
 #remove columns that are not needed for data analysis
   select(-c(`GOLD Study ID`, `Bin Methods`, `Created By`, `Date Added`, `Bin Lineage`)) %>% 
 #create a new column with the Assembly Type
@@ -79,17 +76,15 @@ NEON_MAGs <- NEON_MAGs %>%
   separate(`subplot.layer.date`, c("Subplot", "Layer", "Date"), "-")
 ```
 
-Removing 're-annotation' and 'WREF plot' Samples from Data
-```{r, message=FALSE}
+Metagenome Data
+```{r, message=FALSE, warning=FALSE}
 NEON_metagenomes <- read_tsv("data/exported_img_data_Gs0161344_NEON.tsv") %>% 
   select(-c(`Domain`, `Sequencing Status`, `Sequencing Center`)) %>% 
   rename(`Genome Name` = `Genome Name / Sample Name`) %>% 
   filter(str_detect(`Genome Name`, 're-annotation', negate = T)) %>% 
   filter(str_detect(`Genome Name`, 'WREF plot', negate = T))
-```
 
-Reformatting Genome Name
-```{r, warning=FALSE}
+#Reformatting Genome Name
 NEON_metagenomes <- NEON_metagenomes %>% 
 #Get rid of the the common string "Soil microbial communities from "
   mutate_at("Genome Name", str_replace, "Terrestrial soil microbial communities from ", "") %>% 
@@ -100,17 +95,20 @@ NEON_metagenomes <- NEON_metagenomes %>%
 #separate the Sample Name into Site ID and plot info
   separate(`Sample Name`, c("Site ID","subplot.layer.date"), "_", remove = FALSE,) %>% 
 #separate the plot info into 3 columns
-  separate(`subplot.layer.date`, c("Subplot", "Layer", "Date"), "-")
+  separate(`subplot.layer.date`, c("Subplot", "Layer", "Date"), "-") %>% 
+#filter for Site ID
+  filter(`Site ID` == "TEAK")
 ```
 
-Loading in NEON Chemistry Data 
+Chemistry Data 
 ```{r, message=FALSE}
 NEON_chemistry <- read_tsv("data/neon_plot_soilChem1_metadata.tsv") %>% 
 #remove -COMP from genomicsSampleID
-  mutate_at("genomicsSampleID", str_replace, "-COMP", "")
+  mutate_at("genomicsSampleID", str_replace, "-COMP", "") %>% 
+  filter(`siteID` == "TEAK")
 ```
 
-Joining NEON MAG, Metagenome, and Chemistry Dataframes into a Single Dataframe
+Joining MAG, Metagenome, and Chemistry into a Single Dataframe
 ```{r}
 NEON_MAGs_metagenomes_chemistry <- NEON_MAGs %>% 
   left_join(NEON_metagenomes, by = "Sample Name") %>% 
@@ -118,9 +116,17 @@ NEON_MAGs_metagenomes_chemistry <- NEON_MAGs %>%
   rename("label" = "Bin ID")
 ```
 
+\
+
+# Graphs Below Here
+
+\
+
+### Lower Teakettle Site Graphs
+
 Reading in Tree Files from GTDB
 ```{r}
-tree_arc <- read.tree("data/gtdbtk.ar53.decorated.tree")
+#tree_arc <- read.tree("data/gtdbtk.ar53.decorated.tree")
 tree_bac <- read.tree("data/gtdbtk.bac120.decorated.tree")
 ```
 
@@ -144,23 +150,22 @@ tree_Chloroflexota <- Subtree(tree_bac_preorder, 1712)
 
 Filter NEON Table to Taxonomic Group or Site
 ```{r}
-NEON_MAGs_Chloroflexota <- NEON_MAGs_metagenomes_chemistry %>% 
+NEON_combo_Chloroflexota <- NEON_MAGs_metagenomes_chemistry %>% 
   filter(Phylum == "Chloroflexota")
 ```
 
-# Lower Teakettle Site Graphs
-
-Circle Phylogeny for Site With Phylum Color Labels
-```{r, fig.width = 10, fig.height = 10}
-NEON_MAGs_metagenomes_chemistry_TEAK <- NEON_MAGs_metagenomes_chemistry %>% 
+Circle Phylogeny for TEAK Site Showing Phylum Color Labels
+```{r, fig.width = 10, fig.height = 5}
+NEON_combo_TEAK <- NEON_MAGs_metagenomes_chemistry %>% 
   filter(`Site ID.x` == "TEAK") %>% 
   filter(Domain == "Bacteria")
 
-TEAK_MAGs_label <- NEON_MAGs_metagenomes_chemistry_TEAK$label
+TEAK_MAGs_label <- NEON_combo_TEAK$label
 
 tree_bac_TEAK_MAGs <-drop.tip(tree_bac,tree_bac$tip.label[-match(TEAK_MAGs_label, tree_bac$tip.label)])
 
 ggtree(tree_bac_TEAK_MAGs, layout="circular")  %<+%
   NEON_MAGs_metagenomes_chemistry +
-  geom_point(mapping=aes(color=Phylum))
+  geom_point(mapping=aes(color=Phylum)) +
+  labs(title = "Different Phylums at Lower Teakettle Site")
 ```
