@@ -1,0 +1,9 @@
+/* Whole document: */
+body{
+  font-family: "Lucida Grande";
+  font-size: 16pt;
+}
+/* Headers - not working?*/
+h1{
+  font-size: 24pt;
+}
