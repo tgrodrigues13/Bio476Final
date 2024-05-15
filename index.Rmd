@@ -4,20 +4,21 @@ author: "Tyler Rodrigues"
 date: "2024-05-06"
 output:
   html_document:
-    css: style.css
     toc: true
     toc_float:
       toc_collapsed: true
     toc_depth: 6
-    theme: spacelab
+    theme: simplex
     code_folding: hide
 ---
-# Bio 476 Final Research Project
-<p style="font-size:30px">Lower Teakettle/Chloroflexota </p>
-<!-- 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 -->
+\
+
+# **Bio 476 - Final Research Project**
+<p style="font-size:20pt; color:black">Lower Teakettle/Chloroflexota</p>
+
 <!-- library(usethis) -->
 <!-- use_git_config(user.name = "tgrodrigues13", user.email = "tgrodrigues@umass.edu") -->
-<!-- <p style="font-size:30px">This is a paragraph.</p> -->
+<!-- <p style="font-size:16pt; color:black">MESSAGE</p> -->
 \
 
 ```{r, eval=F, echo=F}
@@ -129,24 +130,28 @@ NEON_MAGs_metagenomes_chemistry <- NEON_MAGs %>%
 
 \
 
-# Abstract - short
+# Abstract
+<!-- Short like 5 sentences -->
 
 \
 
-# Motivating Reasons - 1 paragraph
+# Motivating Reasons
+<!-- Probably 1 paragraph -->
 
 \
 
-# Introduction - 1-2 paragraphs
+# Introduction
+<!-- Probably 2 paragraphs -->
 
 \
 
 # Methods
+<!-- Small description of how we got data/interpreted it -->
 
 \
 
 # Results
-<!-- Lets aim for 20 graphs maybe? -->
+<!-- Aim for 20 graphs maybe? -->
 
 \
 
@@ -203,8 +208,11 @@ ggtree(tree_bac_TEAK_MAGs, layout="circular") %<+%
   NEON_MAGs_metagenomes_chemistry +
   geom_point(mapping=aes(fill=Phylum), size = 2.5, shape = 23) +
   ggtitle("Different Phylums Located at Lower Teakettle") +
-  theme(plot.title = element_text(size = 25, face = "bold"))
+  theme(plot.title = element_text(hjust = 0.5),(size = 30))
+  #face = "bold"
 ```
+This graph shows a circular phylogeny of the species located at the Lower Teakettle Site. 
+
 \
 
 ### Phylum Graphs - Chloroflexota
@@ -215,8 +223,10 @@ ggtree(tree_bac_TEAK_MAGs, layout="circular") %<+%
 
 \
 
-# Discussion - 1 paragraph
+# Discussion
+<!-- Only 1 paragraph -->
 
 \
 
-# Conclusion - 1 paragraph
+# Conclusion
+<!-- Only 1 paragraph -->
