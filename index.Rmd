@@ -46,8 +46,8 @@ suppressPackageStartupMessages(library(ggnewscale))
 suppressPackageStartupMessages(library(ggtreeExtra))
 suppressPackageStartupMessages(library(ggstar))
 suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(zoo))
 ```
-
 ```{r, message=F, warning=F}
 #'[MAG Data]
 
@@ -83,7 +83,6 @@ NEON_MAGs <- read_csv("data/GOLD_Study_ID_Gs0161344_NEON_2024_4_21.csv") %>%
 #separate the plot info into 3 columns
   separate(`subplot.layer.date`, c("Subplot", "Layer", "Date"), "-")
 ```
-
 ```{r, message=F, warning=F}
 #'[Metagenome Data]
 
@@ -105,20 +104,15 @@ NEON_metagenomes <- NEON_metagenomes %>%
 #separate the Sample Name into Site ID and plot info
   separate(`Sample Name`, c("Site ID","subplot.layer.date"), "_", remove = FALSE,) %>% 
 #separate the plot info into 3 columns
-  separate(`subplot.layer.date`, c("Subplot", "Layer", "Date"), "-") %>% 
-#filter for Site ID
-  filter(`Site ID` == "TEAK")
+  separate(`subplot.layer.date`, c("Subplot", "Layer", "Date"), "-")
 ```
- 
 ```{r, message=F}
 #'[Chemistry Data]
 
 NEON_chemistry <- read_tsv("data/neon_plot_soilChem1_metadata.tsv") %>% 
 #remove -COMP from genomicsSampleID
-  mutate_at("genomicsSampleID", str_replace, "-COMP", "") %>% 
-  filter(`siteID` == "TEAK")
+  mutate_at("genomicsSampleID", str_replace, "-COMP", "")
 ```
-
 ```{r}
 #'[Joining MAG, Metagenome, and Chemistry into a Single Dataframe]
 
@@ -127,23 +121,49 @@ NEON_MAGs_metagenomes_chemistry <- NEON_MAGs %>%
   left_join(NEON_chemistry, by = c("Sample Name" = "genomicsSampleID")) %>% 
   rename("label" = "Bin ID")
 ```
+```{r, warning=F, message=F}
+#'[Loading in Sankey NEON Data]
+
+NEON_MAGs_Sankey <- read_csv("data/GOLD_Study_ID_Gs0161344_NEON_edArchaea.csv") %>%
+#remove columns that are not needed for data analysis
+  select(-c(`GOLD Study ID`, `Bin Methods`, `Created By`, `Date Added`)) %>%
+#create a new column with the Assembly Type
+  mutate("Assembly Type" = case_when(`Genome Name` == "NEON combined assembly" ~ `Genome Name`, TRUE ~ "Individual")) %>%
+  mutate_at("Assembly Type", str_replace, "NEON combined assembly", "Combined") %>%
+  separate(`GTDB-Tk Taxonomy Lineage`, c("Domain", "Phylum", "Class", "Order", "Family", "Genus"), "; ", remove = FALSE) %>%
+#Get rid of the the common string "Soil microbial communities from "
+  mutate_at("Genome Name", str_replace, "Terrestrial soil microbial communities from ", "") %>%
+#Use the first `-` to split the column in two
+  separate(`Genome Name`, c("Site","Sample Name"), " - ") %>%
+#Get rid of the the common string "S-comp-1"
+  mutate_at("Sample Name", str_replace, "-comp-1", "") %>%
+#separate the Sample Name into Site ID and plot info
+  separate(`Sample Name`, c("Site ID","subplot.layer.date"), "_", remove = FALSE,) %>%
+#separate the plot info into 3 columns
+  separate(`subplot.layer.date`, c("Subplot", "Layer", "Date"), "-")
+```
 
 \
 
 # Abstract
 <!-- Short like 5 sentences -->
+In this NEON project...
 
 \
 
 # Motivating Reasons
 <!-- Probably 1 paragraph -->
+This project is important...
 
 \
 
 # Introduction
 <!-- Probably 2 paragraphs -->
+The National Science Foundation's National Ecological Observatory Network (NEON) is a country wide program operated by Battelle and is set up to collect long term ecological data. This is an open access data base with the goal of better understanding how nature and the ecosystems are changing. In our specific project we aim to focus in on one of these NEON sites as well as a specific phylum. We will take a deep dive into phylogenies, metagenome-assembled (MAG) data, metagenomic data and chemistry data to gain a deeper understanding of these species and their ecosystems. We specifically will look in on the Lower Teakettle region located at Sierra National Forest in California, USA as well as the Chloroflexota phylum. 
 
 \
+
+![Lower Teakettle, Sierra Nevada Forest, California, USA](images/Lab 10 - NEON Project Intro Picture.jpg){width=300px, height=400px}
 
 # Methods
 <!-- Small description of how we got data/interpreted it -->
@@ -157,7 +177,7 @@ NEON_MAGs_metagenomes_chemistry <- NEON_MAGs %>%
 
 ### Site Graphs - Lower Teakettle, Sierra National Forest, California, USA
 
-<!-- Circle Phylogeny for TEAK Site Showing Phylum Color Labels -->
+<!-- Circle Phylogeny for TEAK With Colored Phylum Labels -->
 
 ```{r, echo=F}
 #'[Reading in Tree Files from GTDB]
@@ -165,7 +185,6 @@ NEON_MAGs_metagenomes_chemistry <- NEON_MAGs %>%
 #tree_arc <- read.tree("data/gtdbtk.ar53.decorated.tree")
 tree_bac <- read.tree("data/gtdbtk.bac120.decorated.tree")
 ```
-
 ```{r, results=F, echo=F}
 #'[Getting Your Subtree]
 
@@ -178,14 +197,12 @@ grep("Chloroflexota", node_vector_bac, value = TRUE)
 ```{r, results=F, echo=F}
 match(grep("Chloroflexota", node_vector_bac, value = TRUE), node_vector_bac)
 ```
-
 ```{r, echo=F}
 #'[Need to Preorder Tree Before Extracting]
 
 tree_bac_preorder <- Preorder(tree_bac)
 tree_Chloroflexota <- Subtree(tree_bac_preorder, 1712)
 ```
-
 ```{r, echo=F}
 #'[Filter Combo Table to Taxonomic Group or Site]
 
@@ -196,7 +213,6 @@ NEON_combo_TEAK <- NEON_MAGs_metagenomes_chemistry %>%
   filter(`Site ID.x` == "TEAK") %>% 
   filter(Domain == "Bacteria")
 ```
-
 ```{r, fig.width = 10, fig.height = 10, fig.align = 'center'}
 #'[Graph Chunk]
 
@@ -208,18 +224,145 @@ ggtree(tree_bac_TEAK_MAGs, layout="circular") %<+%
   NEON_MAGs_metagenomes_chemistry +
   geom_point(mapping=aes(fill=Phylum), size = 2.5, shape = 23) +
   ggtitle("Different Phylums Located at Lower Teakettle") +
-  theme(plot.title = element_text(hjust = 0.5),(size = 30))
-  #face = "bold"
+  theme(plot.title = element_text(hjust = 0.5),(size = 30)) #face = "bold"
 ```
-This graph shows a circular phylogeny of the species located at the Lower Teakettle Site. 
+This graph shows a circular phylogeny of the species located at the Lower Teakettle Site... 
 
 \
 
 ### Phylum Graphs - Chloroflexota
 
-```{r}
+<!-- Sankey Plot of Individual Assembly at TEAK -->
+<!-- Talk about what a Sankey Plot is? -->
 
+```{r, warning=F}
+#'[Sorting for Phylum - Individual Assembly]
+
+NEON_MAGs_Ind <- NEON_MAGs_Sankey %>%
+  filter(`Assembly Type` == "Individual")
+
+NEON_MAGs_Ind_Chloro <- NEON_MAGs_Ind %>%
+  filter(Phylum == "Chloroflexota")
+
+#Select the GTDB Taxonomic lineage and separate into taxonomic levels
+sankey_data <- NEON_MAGs_Ind_Chloro %>%
+  select(`GTDB-Tk Taxonomy Lineage`) %>%
+#NAs are likely Archaea
+  replace_na(list(`GTDB-Tk Taxonomy Lineage` = 'Archaea')) %>%
+#Pavian format requires p__ etc
+  separate(`GTDB-Tk Taxonomy Lineage`, c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species"), "; ")
+
+#Fill in the NAs with the taxonomic the higher taxonomic level to the left
+sankey_data[] <- t(apply(sankey_data, 1, zoo::na.locf))
+
+#Put the data into a format that can be read by the Sankey App
+sankey_data <- sankey_data %>%
+  unite(col = "classification", c(Domain, Phylum, Class, Order, Family, Genus, Species), sep='; ') %>%
+  mutate_at("classification", str_replace, "Archaea", "d__Archaea") %>%
+  mutate_at("classification", str_replace, "Bacteria", "d__Bacteria") %>%  
+  mutate_at("classification", str_replace, "; ", "|p__") %>%
+  mutate_at("classification", str_replace, "; ", "|c__") %>%
+  mutate_at("classification", str_replace, "; ", "|o__") %>%
+  mutate_at("classification", str_replace, "; ", "|f__") %>%
+  mutate_at("classification", str_replace, "; ", "|g__") %>%
+  mutate_at("classification", str_replace, "; ", "|s__")  
+
+#Create format for Pavian with counts for each taxonomic level
+sankey_data_s <- sankey_data
+sankey_data_g <- sankey_data
+sankey_data_f <- sankey_data
+sankey_data_o <- sankey_data
+sankey_data_c <- sankey_data
+sankey_data_p <- sankey_data
+sankey_data_d <- sankey_data
+
+sankey_data_g$classification <- sub("\\|s__.*", "", sankey_data_g$classification)  
+sankey_data_f$classification <- sub("\\|g__.*", "", sankey_data_f$classification)  
+sankey_data_o$classification <- sub("\\|f__.*", "", sankey_data_o$classification)  
+sankey_data_c$classification <- sub("\\|o__.*", "", sankey_data_c$classification)  
+sankey_data_p$classification <- sub("\\|c__.*", "", sankey_data_p$classification)  
+sankey_data_d$classification <- sub("\\|p__.*", "", sankey_data_d$classification)  
+
+sankey_data_allTaxa <- bind_rows(sankey_data_s, sankey_data_g, sankey_data_f, sankey_data_o, sankey_data_c, sankey_data_p, sankey_data_d) %>%
+  mutate(classification = as.factor(classification)) %>%
+  count(classification) %>%
+#rename for Pavian format
+  rename(`#SampleID` = `classification`) %>%
+  rename(`Metaphlan2_Analysis` = `n`)
+
+#Write file to input to Pavian Sankey
+write_tsv(sankey_data_allTaxa, "Ind_Chloro.txt")
 ```
+```{r}
+knitr::include_url("sankey-Ind_Chloro.txt.html")
+```
+This Sankey plot shows...
+
+<!-- Sankey Plot of Combined Assembly at TEAK -->
+<!-- Talk about what a Sankey Plot is? -->
+
+```{r}
+#'[Sorting for Phylum - Combined Assembly]
+
+NEON_MAGs_Co <- NEON_MAGs_Sankey %>%
+  filter(`Assembly Type` == "Combined")
+
+NEON_MAGs_Co_Chloro <- NEON_MAGs_Co %>%
+  filter(Phylum == "Chloroflexota")
+
+#Select the GTDB Taxonomic lineage and separate into taxonomic levels
+sankey_data <- NEON_MAGs_Co_Chloro %>%
+  select(`GTDB-Tk Taxonomy Lineage`) %>%
+#NAs are likely Archaea
+  replace_na(list(`GTDB-Tk Taxonomy Lineage` = 'Archaea')) %>%
+#Pavian format requires p__ etc
+  separate(`GTDB-Tk Taxonomy Lineage`, c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species"), "; ")
+
+#Fill in the NAs with the taxonomic the higher taxonomic level to the left
+sankey_data[] <- t(apply(sankey_data, 1, zoo::na.locf))
+
+#Put the data into a format that can be read by the Sankey App
+sankey_data <- sankey_data %>%
+  unite(col = "classification", c(Domain, Phylum, Class, Order, Family, Genus, Species), sep='; ') %>%
+  mutate_at("classification", str_replace, "Archaea", "d__Archaea") %>%
+  mutate_at("classification", str_replace, "Bacteria", "d__Bacteria") %>%  
+  mutate_at("classification", str_replace, "; ", "|p__") %>%
+  mutate_at("classification", str_replace, "; ", "|c__") %>%
+  mutate_at("classification", str_replace, "; ", "|o__") %>%
+  mutate_at("classification", str_replace, "; ", "|f__") %>%
+  mutate_at("classification", str_replace, "; ", "|g__") %>%
+  mutate_at("classification", str_replace, "; ", "|s__")  
+
+#Create format for Pavian with counts for each taxonomic level
+sankey_data_s <- sankey_data
+sankey_data_g <- sankey_data
+sankey_data_f <- sankey_data
+sankey_data_o <- sankey_data
+sankey_data_c <- sankey_data
+sankey_data_p <- sankey_data
+sankey_data_d <- sankey_data
+
+sankey_data_g$classification <- sub("\\|s__.*", "", sankey_data_g$classification)  
+sankey_data_f$classification <- sub("\\|g__.*", "", sankey_data_f$classification)  
+sankey_data_o$classification <- sub("\\|f__.*", "", sankey_data_o$classification)  
+sankey_data_c$classification <- sub("\\|o__.*", "", sankey_data_c$classification)  
+sankey_data_p$classification <- sub("\\|c__.*", "", sankey_data_p$classification)  
+sankey_data_d$classification <- sub("\\|p__.*", "", sankey_data_d$classification)  
+
+sankey_data_allTaxa <- bind_rows(sankey_data_s, sankey_data_g, sankey_data_f, sankey_data_o, sankey_data_c, sankey_data_p, sankey_data_d) %>%
+  mutate(classification = as.factor(classification)) %>%
+  count(classification) %>%
+#rename for Pavian format
+  rename(`#SampleID` = `classification`) %>%
+  rename(`Metaphlan2_Analysis` = `n`)
+
+#Write file to input to Pavian Sankey
+write_tsv(sankey_data_allTaxa, "Co_Chloro_pavian.txt")
+```
+```{r}
+knitr::include_url("sankey-Co_Chloro_pavian.txt.html")
+```
+This Sankey plot shows...
 
 \
 
